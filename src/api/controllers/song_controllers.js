@@ -1,17 +1,30 @@
+const { deleteFile } = require('../../utils/deleteFile')
 const Song = require('../models/song_model')
 
 const createSong = async (req, res, next) => {
     try {
-        const newSong = new Song(req.body)
-        const songDuplicated = await Song.findOne({titulo: req.body.titulo})
-        if(songDuplicated)return res.status(400).json('Ya existe una canción con este titulo')
-    await newSong.save();
-    return res.status(201).json(newSong)
+      const songData = {
+        ...req.body,
+        musicians: req.body.musicians ? JSON.parse(req.body.musicians) : [],
+      };
+  
+      const newSong = new Song(songData);
+  
+      if (req.file) {
+        newSong.imagen = req.file.path;
+      }
+  
+      const songDuplicated = await Song.findOne({ titulo: req.body.titulo });
+      if (songDuplicated) return res.status(400).json('Ya existe una canción con este título');
+  
+      await newSong.save();
+      return res.status(201).json(newSong);
     } catch (error) {
-        return res.status(500).json('Error al crear la canción')
+      console.log(error);
+      return res.status(500).json('Error al crear la canción');
     }
-
-}
+  };
+  
 
 const getSongs = async (req, res, next) => {
     try {
@@ -34,35 +47,36 @@ const getSongById = async (req, res, next) => {
 
 const updateSong = async (req, res, next) => {
     try {
-        const {id} = req.params
-        const newSong = new Song(req.body)
-        const oldSong = await Song.findById(id)
-        newSong._id = id
-        console.log(newSong.musicians)
-
-        const allMusicians = [...oldSong.musicians, ...newSong.musicians]
-        console.log(allMusicians)
-        const musiciansFiltered = [];
-     const musicianIds = new Set();
-
-     allMusicians.forEach((musician) => {
-        const musicianId = musician._id.toString();
-        if (!musicianIds.has(musicianId)) {
-            musicianIds.add(musicianId);
-            musiciansFiltered.push(musician);
-        }
-    });
-
-    newSong.musicians = musiciansFiltered;
-
-    const song = await Song.findByIdAndUpdate(id, newSong, {new: true})
-    return res.status(200).json({message:'Canción acrtualizada correctamente', song})
+      const { id } = req.params;
+  
+      if (typeof req.body.musicians === 'string') {
+        req.body.musicians = JSON.parse(req.body.musicians);
+      }
+  
+      const oldSong = await Song.findById(id);
+      const newSong = new Song(req.body);
+      newSong._id = id;
+  
+      if (req.file) {
+        deleteFile(oldSong.imagen);
+        newSong.imagen = req.file.path;
+      } else {
+        newSong.imagen = oldSong.imagen;
+      }
+  
+      newSong.album = req.body.album || oldSong.album;
+      newSong.musicians = [...new Set(req.body.musicians)];
+  
+      const song = await Song.findByIdAndUpdate(id, newSong, { new: true }).populate("musicians");
+      return res.status(200).json({ message: "Canción actualizada correctamente", song });
     } catch (error) {
-        console.log(error)
-        return res.status(400).json('Error al actuializar el album')
+      console.log(error);
+      return res.status(400).json("Error al actualizar la canción");
     }
-}
-
+  };
+  
+  
+  
 const deleteSong = async ( req, res, next) => {
     try {
         const {id} = req.params

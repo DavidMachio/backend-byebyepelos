@@ -1,17 +1,37 @@
+const { deleteFile } = require('../../utils/deleteFile');
 const Album = require('../models/album_model');
 
 const createAlbum = async (req, res, next) => {
     try {
         const newAlbum = new Album(req.body);
+
+        // Si se ha subido un archivo de portada, lo asignamos
+        if (req.file) {
+            newAlbum.cover = req.file.path;
+        }
         
-        const albumDuplicated = await Album.findOne({title: req.body.title})
-        if(albumDuplicated) return res.status(400).json('Este album ya existe')
+        // Parsear músicos y mezclador de la solicitud
+        if (req.body.musicians) {
+            newAlbum.musicians = JSON.parse(req.body.musicians); // Convertir el JSON a un array de IDs
+        }
+
+        if (req.body.mixed) {
+            newAlbum.mixed = req.body.mixed;
+        }
+
+        const albumDuplicated = await Album.findOne({ title: req.body.title });
+        if (albumDuplicated) return res.status(400).json('Este álbum ya existe');
+
         await newAlbum.save();
-        return res.status(201).json(newAlbum)
+        return res.status(201).json(newAlbum);
     } catch (error) {
-        return res.status(500).json('Error al crear un nuevo album')
+        return res.status(500).json('Error al crear un nuevo álbum');
     }
-}
+};
+
+
+  
+  
 
 const getAlbums = async (req, res, next) => {
     try {
@@ -43,53 +63,56 @@ const getAlbumById = async (req, res, next) => {
 }
 const updateAlbum = async (req, res, next) => {
     try {
-        const {id} = req.params
-    const newAlbum = new Album(req.body)
-    const oldAlbum = await Album.findById(id)
-
-    newAlbum._id = id;
-
-    
-    
-     // Concatenar todos los músicos
-     const allMusicians = [...oldAlbum.musicians, ...newAlbum.musicians];
-     // Crear un array para almacenar músicos filtrados
-     const musiciansFiltered = [];
-     const musicianIds = new Set();
-
-     // Filtrar músicos para evitar duplicados
-     allMusicians.forEach((musician) => {
-         const musicianId = musician._id.toString();
-         if (!musicianIds.has(musicianId)) {
-             musicianIds.add(musicianId);
-             musiciansFiltered.push(musician);
-         }
-     });
-
-     newAlbum.musicians = musiciansFiltered;
-     
-
-     const allSongs = [...oldAlbum.songs, ...newAlbum.songs];
-     const songsFiltered = [];
-     const songIds = new Set();
-
-     allSongs.forEach((song) => {
-         const songId = song._id.toString();
-         if (!songIds.has(songId)) {
-             songIds.add(songId);
-             songsFiltered.push(song);
-         }
-     });
-
-     newAlbum.songs = songsFiltered;
-
-    const album = await Album.findByIdAndUpdate(id, newAlbum, {new:true})
-    return res.status(200).json({message: 'Album actualizado correctamente', album})
+      const { id } = req.params;
+      const oldAlbum = await Album.findById(id);
+  
+      if (!oldAlbum) {
+        return res.status(404).json({ message: "Álbum no encontrado" });
+      }
+  
+      const updatedData = {
+        title: req.body.title,
+        year: req.body.year,
+        mixed: req.body.mixed,
+      };
+  
+      if (req.body.musicians) {
+        updatedData.musicians = JSON.parse(req.body.musicians);
+      }
+  
+      // 🔽 ESTA ES LA PARTE QUE FALTABA
+      if (req.body.songs) {
+        updatedData.songs = JSON.parse(req.body.songs);
+      }
+  
+      if (req.file) {
+        updatedData.cover = req.file.path;
+        if (oldAlbum.cover) {
+          deleteFile(oldAlbum.cover); // asumiendo que tienes esta función
+        }
+      } else {
+        updatedData.cover = oldAlbum.cover;
+      }
+  
+      const updatedAlbum = await Album.findByIdAndUpdate(id, updatedData, {
+        new: true,
+      }).populate("musicians mixed songs");
+  
+      return res.status(200).json({
+        message: "Álbum actualizado correctamente",
+        album: updatedAlbum,
+      });
     } catch (error) {
-        return res.status(400).json('Error al actualizar el album')
+      console.error("Error al actualizar álbum:", error);
+      return res.status(400).json("Error al actualizar el álbum");
     }
-
-}
+  };
+  
+  
+  
+  
+  
+  
 
 const deleteAlbum = async (req, res, next) => {
     try {
