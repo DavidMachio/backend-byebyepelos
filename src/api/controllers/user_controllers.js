@@ -5,6 +5,17 @@ const { generateSign } = require("../../utils/jwt");
 const User = require("../models/user_model")
 const bcrypt = require('bcrypt')
 
+// Campos del usuario que pueden salir en las respuestas de login y registro.
+// La web solo usa estos; la contraseña (ni su hash) no sale nunca.
+const publicUser = (user) => ({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    rol: user.rol,
+    avatar: user.avatar,
+    playList: user.playList
+})
+
 const getUsers = async (req, res, next) => {
     try {
         
@@ -43,7 +54,7 @@ const register = async (req, res, next) => {
         const user = await newUser.save()
 
         sendEmail({email: newUser.email, password: req.body.password})
-        return res.status(201).json(user)
+        return res.status(201).json(publicUser(user))
         
     } catch (error) {
         return res.status(400).json('Error en el registro de usuario')
@@ -52,12 +63,13 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
     try {
         const { email, password} = req.body
-        const user = await User.findOne({email})
+        // password tiene select:false en el modelo, así que hay que pedirla aquí a propósito
+        const user = await User.findOne({email}).select('+password')
         if( !user) return res.status(400).json('Usuario o contraseña incorrectos')
 
             if(bcrypt.compareSync(password, user.password)){
                 const token = generateSign(user._id)
-                return res.status(200).json({token, user})
+                return res.status(200).json({token, user: publicUser(user)})
             }else{
                 return res.status(400).json('Usuario o contraseña incorrectos')
             }
