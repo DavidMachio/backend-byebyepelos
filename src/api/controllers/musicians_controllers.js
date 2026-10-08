@@ -18,7 +18,7 @@ const getMusicians = async (requ, res, next) => {
         const musicians = await Musician.find().populate('songs')
         return res.status(200).json(musicians)
     } catch (error) {
-        return res.status('400').json('Error al buscar músicos')
+        return res.status(400).json('Error al buscar músicos')
     }
 }
 
