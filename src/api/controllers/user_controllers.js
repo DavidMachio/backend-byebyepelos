@@ -26,9 +26,17 @@ const getUsers = async (req, res, next) => {
         return res.status(400).json('Error al encontrar usuarios')
     }
 }
+// El nombre llega desde la URL: es texto, no un patrón. Se escapan los caracteres
+// especiales para que, por ejemplo, ".*" no devuelva a todos los usuarios.
+const escapeRegex = (texto) => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const getUserByName = async (req, res, next) => {
     try {
-        const user = await User.find({name: {$regex: req.params.name, $options: "i"}}) .populate({
+        // Ruta pública: solo devuelve lo que la web ya muestra (nombre, avatar y playlist).
+        // Nunca email, rol ni _id.
+        const user = await User.find({name: {$regex: escapeRegex(req.params.name), $options: "i"}})
+        .select('name avatar playList -_id')
+        .populate({
             path: 'playList',  // Poblamos las canciones en la playlist
             populate: {
                 path: 'musicians',  // Poblamos los músicos dentro de cada canción
@@ -38,6 +46,22 @@ const getUserByName = async (req, res, next) => {
         return res.status(200).json(user)
     } catch (error) {
         return res.status(400).json('No se ha encontrado este usuario')
+    }
+}
+
+// Playlist del usuario que ha iniciado sesión: el id sale del token (isAuth), no de la URL.
+const getMyPlaylist = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user._id).populate({
+            path: 'playList',
+            populate: {
+                path: 'musicians',
+                model: 'musicians'
+            }
+        })
+        return res.status(200).json(user.playList)
+    } catch (error) {
+        return res.status(400).json('No se ha podido cargar la playlist')
     }
 }
 const register = async (req, res, next) => {
@@ -175,6 +199,7 @@ module.exports = {
     removeSongFromPlaylist,
     deleteUser,
     getUsers,
-    checksessions
+    checksessions,
+    getMyPlaylist
 
 }
