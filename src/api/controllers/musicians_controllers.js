@@ -22,9 +22,12 @@ const getMusicians = async (requ, res, next) => {
     }
 }
 
+// El nombre llega desde la URL: es texto, no un patrón. Se escapan los caracteres especiales.
+const escapeRegex = (texto) => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const getMusicianByName = async (req, res, next) => {
     try {
-        const musician = await Musician.find({firstName: {$regex: req.params.name, $options: "i"}})
+        const musician = await Musician.find({firstName: {$regex: escapeRegex(req.params.name), $options: "i"}})
         return res.status(200).json(musician)
     } catch (error) {
         return res.status(400).json('No se ha encontrado este músico')
