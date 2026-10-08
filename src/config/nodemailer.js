@@ -10,27 +10,28 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const mailOptions = ({email, password, }) => {
+const mailOptions = ({email}) => {
     return {
   from: process.env.USER_MAILER,
   to: email,
   subject: 'Tu cuenta ha sido creada',
-  html: getHTML({email, password})
+  html: getHTML({email})
 }
 };
 
-const getHTML = ({email, password}) => {
+// El correo no incluye la contraseña: nunca debe viajar por email.
+const getHTML = ({email}) => {
     return `
     <div>
     <h4>Tu usuario: ${email}</h4>
-    <h4>Tu contraseña: ${password}</h4>
-    <a href='#'>Haz click aqui para ir a la página</a>
+    <p>Entra con la contraseña que elegiste al registrarte.</p>
+    <a href='https://byebyepelosmusic.vercel.app'>Haz click aquí para ir a la página</a>
     </div>
     `
 
 }
-const sendEmail = ({email, password}) =>{
-transporter.sendMail(mailOptions({email, password}), function(error, info){
+const sendEmail = ({email}) =>{
+transporter.sendMail(mailOptions({email}), function(error, info){
     if (error) {
       return console.log(error);
     }
