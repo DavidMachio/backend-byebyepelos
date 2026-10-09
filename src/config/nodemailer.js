@@ -30,13 +30,18 @@ const getHTML = ({email}) => {
     `
 
 }
-const sendEmail = ({email}) =>{
-transporter.sendMail(mailOptions({email}), function(error, info){
-    if (error) {
-      return console.log(error);
-    }
-    console.log('Correo enviado: ' + info.response);
-  });
+// Devuelve una promesa: quien llama debe esperarla (await). En Vercel la función se congela
+// al responder, y un envío lanzado sin esperar puede no llegar a salir. Si falla, no lanza
+// error (el registro no debe romperse por el correo): lo anota en el registro y devuelve false.
+const sendEmail = async ({email}) => {
+  try {
+    const info = await transporter.sendMail(mailOptions({email}))
+    console.log('Correo enviado: ' + info.response)
+    return true
+  } catch (error) {
+    console.log('Error al enviar el correo: ' + error.message)
+    return false
+  }
 }
 
 module.exports = {sendEmail}

@@ -55,7 +55,7 @@ const register = async (req, res, next) => {
         newUser.password = hashPassword(req.body.password)
         const user = await newUser.save()
 
-        sendEmail({email: newUser.email})
+        await sendEmail({email: newUser.email})
         return res.status(201).json(publicUser(user))
         
     } catch (error) {
