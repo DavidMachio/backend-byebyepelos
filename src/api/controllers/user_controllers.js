@@ -1,5 +1,4 @@
 const { hashPassword } = require("../../config/hashPassword");
-const { sendEmail } = require("../../config/nodemailer");
 const { deleteFile } = require("../../utils/deleteFile");
 const { generateSign } = require("../../utils/jwt");
 const User = require("../models/user_model")
@@ -55,7 +54,6 @@ const register = async (req, res, next) => {
         newUser.password = hashPassword(req.body.password)
         const user = await newUser.save()
 
-        await sendEmail({email: newUser.email})
         return res.status(201).json(publicUser(user))
         
     } catch (error) {
