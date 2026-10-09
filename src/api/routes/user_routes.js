@@ -1,7 +1,7 @@
 const { isAuth, isAdmin } = require('../../middlewares/auth');
 const {checkUser} = require('../../middlewares/checkUser');
 const upload = require('../../middlewares/file');
-const { register, getUsers, login, updateUser, deleteUser, getUserByName, checksessions, removeSongFromPlaylist, getMyPlaylist } = require('../controllers/user_controllers');
+const { register, getUsers, login, updateUser, deleteUser, checksessions, removeSongFromPlaylist, getMyPlaylist } = require('../controllers/user_controllers');
 
 const userRouter = require('express').Router();
 //routes
@@ -14,7 +14,6 @@ userRouter.put('/:id/remove-song', isAuth, checkUser, removeSongFromPlaylist)
 userRouter.delete('/:id', isAuth, checkUser, deleteUser)
 userRouter.get("/",isAdmin, getUsers)
 userRouter.get('/me/playlist', isAuth, getMyPlaylist)
-userRouter.get("/:name", getUserByName)
 
 
 
